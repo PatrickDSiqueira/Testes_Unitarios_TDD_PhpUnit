@@ -19,6 +19,11 @@ foreach (new DirectoryIterator( __DIR__) as $file){
 
     $methods = get_class_methods($testClass);
     foreach ($methods as $method){
+
+        if(substr($method, -4) !== 'Test'){
+            continue;
+        }
+
         $testClass->$method();
     }
 };
