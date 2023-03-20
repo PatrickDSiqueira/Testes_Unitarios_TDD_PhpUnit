@@ -4,6 +4,7 @@ namespace FidelityProgramBundle\Service;
 
 use FidelityProgramBundle\Repository\PointsRepository;
 use OrderBundle\Entity\Customer;
+use FidelityProgramBundle\Test\Service\PointsRepositorySpy;
 use PHPUnit\Framework\TestCase;
 
 class FidelityProgramServiceTest extends TestCase
@@ -14,9 +15,11 @@ class FidelityProgramServiceTest extends TestCase
     public function shouldSaveWhenReceivePoints()
     {
 
-        $pointsRepository = $this->createMock(PointsRepository::class);
-        $pointsRepository->expects($this->once())
-            ->method('save');
+//        $pointsRepository = $this->createMock(PointsRepository::class);
+//        $pointsRepository->expects($this->once())
+//            ->method('save');
+
+        $pointsRepository = new PointsRepositorySpy();
 
         $pointCalculator = $this->createMock(PointsCalculator::class);
         $pointCalculator->method('calculatePointsToReceive')
@@ -28,6 +31,8 @@ class FidelityProgramServiceTest extends TestCase
         $value = 20;
 
         $fidelityProgramService->addPoints($customer, $value);
+
+        $this->assertTrue($pointsRepository->called());
     }
 
     /**
