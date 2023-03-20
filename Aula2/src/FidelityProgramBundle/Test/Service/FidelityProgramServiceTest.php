@@ -3,9 +3,10 @@
 namespace FidelityProgramBundle\Service;
 
 use FidelityProgramBundle\Repository\PointsRepository;
+use MyFramework\LoggerInterface;
 use OrderBundle\Entity\Customer;
-use FidelityProgramBundle\Test\Service\PointsRepositorySpy;
 use PHPUnit\Framework\TestCase;
+
 
 class FidelityProgramServiceTest extends TestCase
 {
@@ -15,29 +16,41 @@ class FidelityProgramServiceTest extends TestCase
     public function shouldSaveWhenReceivePoints()
     {
 
-//        $pointsRepository = $this->createMock(PointsRepository::class);
-//        $pointsRepository->expects($this->once())
-//            ->method('save');
-
-        $pointsRepository = new PointsRepositorySpy();
+        $pointsRepository = $this->createMock(PointsRepository::class);
+        $pointsRepository->expects($this->once())
+            ->method('save');
 
         $pointCalculator = $this->createMock(PointsCalculator::class);
         $pointCalculator->method('calculatePointsToReceive')
             ->willReturn(20);
 
-        $fidelityProgramService = new FidelityProgramService($pointsRepository, $pointCalculator);
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->method('log')
+            ->will($this->returnCallback(
+                function ($message) use (&$allMessages){
+                    $allMessages[] = $message;
+                }
+            ));
+
+        $fidelityProgramService = new FidelityProgramService(
+            $pointsRepository,
+            $pointCalculator,
+            $logger
+        );
 
         $customer = $this->createMock(Customer::class);
         $value = 20;
 
         $fidelityProgramService->addPoints($customer, $value);
 
-        $this->assertTrue($pointsRepository->called());
+        $expectedMessages = [
+            'Checking points for customer',
+            'Customer received points'
+        ];
+        $this->assertEquals($expectedMessages, $allMessages);
     }
 
-    /**
-     * @test
-     */
+
     public function shouldNotSaveWhenReceiveZeroPoints()
     {
 
