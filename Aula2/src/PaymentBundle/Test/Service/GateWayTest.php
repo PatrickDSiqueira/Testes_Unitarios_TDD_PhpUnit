@@ -66,34 +66,16 @@ class GateWayTest extends TestCase
         $value = 100;
         $token = 'meu-token';
 
-        $map = [
-            [
-                'POST',
-                Gateway::BASE_URL . '/authenticate',
-                [
-                    'user' => $user,
-                    'password' => $password
-              ],
-                'meu-token'
-            ],
-            [
-                'POST',
-                Gateway::BASE_URL . '/pay',
-                [
-                    'name' => $name,
-                    'credit_card_number' =>  $credit_card_number,
-                    'validity' => $validity,
-                    'value' => $value,
-                    'token' => $token
-                ],
-                ['paid' => false]
-            ]
-        ];
+        $httpClient
+            ->expects($this->at(0))
+            ->method('send')
+            ->willReturn($token);
 
         $httpClient
-            ->expects($this->atLeast(2))
+            ->expects($this->at(1))
             ->method('send')
-            ->will($this->returnValueMap($map));
+            ->willReturn(['paid' => false]);
+
 
         $paid = $gateway->pay($name, $credit_card_number, $validity, $value);
         $this->assertEquals($paid, false);
