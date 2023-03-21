@@ -26,6 +26,7 @@ class OrdemServiceTest extends TestCase
     private $customer;
     private $item;
     private $creditCard;
+    private $orderService;
 
     public function setUp()
     {
@@ -44,20 +45,12 @@ class OrdemServiceTest extends TestCase
      */
     public function shouldNotProcessWhenCustomerIsNotAllowed()
     {
-        $ordemService = new OrderService(
-            $this->badWordsValidator,
-            $this->paymentService,
-            $this->ordemRepository,
-            $this->fidelityProgramService
-        );
-
-        $this->customer
-            ->method('isAllowedToOrder')
-            ->willReturn(false);
+        $this->withOrderService()
+             ->withCustomerNotAllowed();
 
         $this->expectException(CustomerNotAllowedException::class);
 
-        $ordemService->process(
+        $this->orderService->process(
             $this->customer,
             $this->item,
             "",
@@ -70,24 +63,13 @@ class OrdemServiceTest extends TestCase
      */
     public function shouldNotProcessWhenItemIsNotAvailable()
     {
-        $ordemService = new OrderService(
-            $this->badWordsValidator,
-            $this->paymentService,
-            $this->ordemRepository,
-            $this->fidelityProgramService
-        );
-
-        $this->customer
-            ->method('isAllowedToOrder')
-            ->willReturn(true);
-
-        $this->item
-            ->method('isAvailable')
-            ->willReturn(false);
+        $this->withOrderService()
+            ->withCustomerAllowed()
+            ->withNotAvailableItem();
 
         $this->expectException(ItemNotAvailableException::class);
 
-        $ordemService->process(
+        $this->orderService->process(
             $this->customer,
             $this->item,
             "",
@@ -100,28 +82,14 @@ class OrdemServiceTest extends TestCase
      */
     public function shouldNotProcessWhenBadWordsIsFound()
     {
-        $ordemService = new OrderService(
-            $this->badWordsValidator,
-            $this->paymentService,
-            $this->ordemRepository,
-            $this->fidelityProgramService
-        );
-
-        $this->customer
-            ->method('isAllowedToOrder')
-            ->willReturn(true);
-
-        $this->item
-            ->method('isAvailable')
-            ->willReturn(true);
-
-        $this->badWordsValidator
-            ->method('hasBadWords')
-            ->willReturn(true);
+        $this->withOrderService()
+            ->withCustomerAllowed()
+            ->withAvailableItem()
+            ->withBadWordsFound();
 
         $this->expectException(BadWordsFoundException::class);
 
-        $ordemService->process(
+        $this->orderService->process(
             $this->customer,
             $this->item,
             "",
@@ -134,24 +102,10 @@ class OrdemServiceTest extends TestCase
      */
     public function shouldSuccessfullyProcess()
     {
-        $ordemService = new OrderService(
-            $this->badWordsValidator,
-            $this->paymentService,
-            $this->ordemRepository,
-            $this->fidelityProgramService
-        );
-
-        $this->customer
-            ->method('isAllowedToOrder')
-            ->willReturn(true);
-
-        $this->item
-            ->method('isAvailable')
-            ->willReturn(true);
-
-        $this->badWordsValidator
-            ->method('hasBadWords')
-            ->willReturn(false);
+        $this->withOrderService()
+            ->withCustomerAllowed()
+            ->withAvailableItem()
+            ->withBadWordsNotFound();
 
         $paymentTransaction = $this->createMock(PaymentTransaction::class);
 
@@ -163,7 +117,7 @@ class OrdemServiceTest extends TestCase
             ->expects(self::once())
             ->method('save');
 
-        $createdOrder = $ordemService->process(
+        $createdOrder= $this->orderService->process(
             $this->customer,
             $this->item,
             "",
@@ -171,5 +125,62 @@ class OrdemServiceTest extends TestCase
         );
 
         $this->assertNotEmpty($createdOrder->getPaymentTransaction());
+    }
+
+    public function withOrderService()
+    {
+        $this->orderService = new OrderService(
+            $this->badWordsValidator,
+            $this->paymentService,
+            $this->ordemRepository,
+            $this->fidelityProgramService
+        );
+        return $this;
+    }
+
+    public function withCustomerNotAllowed(){
+        $this->customer
+            ->method('isAllowedToOrder')
+            ->willReturn(false);
+
+        return $this;
+    }
+
+    public function withCustomerAllowed(){
+        $this->customer
+             ->method('isAllowedToOrder')
+             ->willReturn(true);
+
+        return $this;
+    }
+
+    public function withNotAvailableItem(){
+        $this->item
+            ->method('isAvailable')
+            ->willReturn(false);
+
+        return $this;
+    }
+
+    public function withAvailableItem(){
+        $this->item
+            ->method('isAvailable')
+            ->willReturn(true);
+
+        return $this;
+    }
+
+    public function withBadWordsNotFound(){
+        $this->badWordsValidator
+            ->method('hasBadWords')
+            ->willReturn(false);
+
+        return $this;
+    }
+
+    public function withBadWordsFound(){
+        $this->badWordsValidator
+            ->method('hasBadWords')
+            ->willReturn(true);
     }
 }
