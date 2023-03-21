@@ -14,15 +14,21 @@ class GateWayTest extends TestCase
      */
     public function shouldNotPayWhenAuthenticationFail()
     {
-
+        // FASE DE PREPARAÇÃO
         $httpClient = $this->createMock(HttpClientInterface::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $user = 'test';
+        $password = 'invalid-password';
+        $gateway = new Gateway($httpClient, $logger, $user, $password);
+
+        //FASE DE EXECUÇÃO
         $map = [
             [
                 'POST',
                 Gateway::BASE_URL . '/authenticate',
                 [
-                    'user' => 'teste',
-                    'password' => 'invalid-password'
+                    'user' => $user,
+                    'password' => $password
                 ],
                 null
             ],
@@ -36,15 +42,10 @@ class GateWayTest extends TestCase
             ->method('send')
             ->will($this->returnValueMap($map));
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $user = 'test';
-        $password = 'invalid-password';
-        $gateway = new Gateway($httpClient, $logger, $user, $password);
 
         $paid = $gateway->pay('Patrick Siqueira', 1111222233334444, new \DateTime('now'), 100);
 
-
+        // FASE DE ASSERÇÃO
         $this->assertEquals($paid, false);
     }
 
@@ -54,15 +55,24 @@ class GateWayTest extends TestCase
     public function shouldNotPayWhenFailOnGateway()
     {
         $httpClient = $this->createMock(HttpClientInterface::class);
-
+        $logger = $this->createMock(LoggerInterface::class);
+        $user = 'test';
+        $password = 'valid-password';
+        $gateway = new Gateway($httpClient, $logger, $user, $password);
         $validity = new \DateTime('now');
+
+        $name = 'Patrick Siqueira';
+        $credit_card_number = '1111222233334444';
+        $value = 100;
+        $token = 'meu-token';
+
         $map = [
             [
                 'POST',
                 Gateway::BASE_URL . '/authenticate',
                 [
-                    'user' => 'test',
-                    'password' => 'valid-password'
+                    'user' => $user,
+                    'password' => $password
               ],
                 'meu-token'
             ],
@@ -70,11 +80,11 @@ class GateWayTest extends TestCase
                 'POST',
                 Gateway::BASE_URL . '/pay',
                 [
-                    'name' => 'Patrick Siqueira',
-                    'credit_card_number' => 1111222233334444,
+                    'name' => $name,
+                    'credit_card_number' =>  $credit_card_number,
                     'validity' => $validity,
-                    'value' => 100,
-                    'token' => 'meu-token'
+                    'value' => $value,
+                    'token' => $token
                 ],
                 ['paid' => false]
             ]
@@ -85,14 +95,7 @@ class GateWayTest extends TestCase
             ->method('send')
             ->will($this->returnValueMap($map));
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $user = 'test';
-        $password = 'valid-password';
-        $gateway = new Gateway($httpClient, $logger, $user, $password);
-
-        $paid = $gateway->pay('Patrick Siqueira', 1111222233334444, $validity, 100);
-
+        $paid = $gateway->pay($name, $credit_card_number, $validity, $value);
         $this->assertEquals($paid, false);
     }
 
@@ -103,6 +106,15 @@ class GateWayTest extends TestCase
     {
 
         $httpClient = $this->createMock(HttpClientInterface::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $user = 'test';
+        $password = 'valid-password';
+        $gateway = new Gateway($httpClient, $logger, $user, $password);
+
+        $name = 'Patrick Siqueira';
+        $credit_card_number = '1111222233334444';
+        $value = 100;
+        $token = 'meu-token';
 
         $validity = new \DateTime('now');
         $map = [
@@ -110,20 +122,20 @@ class GateWayTest extends TestCase
                 'POST',
                 Gateway::BASE_URL . '/authenticate',
                 [
-                    'user' => 'test',
-                    'password' => 'valid-password'
+                    'user' => $user,
+                    'password' => $password
                 ],
-                'meu-token'
+                $token
             ],
             [
                 'POST',
                 Gateway::BASE_URL . '/pay',
                 [
-                    'name' => 'Patrick Siqueira',
-                    'credit_card_number' => 1111222233334444,
+                    'name' => $name,
+                    'credit_card_number' => $credit_card_number,
                     'validity' => $validity,
-                    'value' => 100,
-                    'token' => 'meu-token'
+                    'value' => $value,
+                    'token' => $token
                 ],
                 ['paid' => true]
             ]
@@ -134,15 +146,7 @@ class GateWayTest extends TestCase
             ->method('send')
             ->will($this->returnValueMap($map));
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $user = 'test';
-        $password = 'valid-password';
-        $gateway = new Gateway($httpClient, $logger, $user, $password);
-
-        $paid = $gateway->pay('Patrick Siqueira', 1111222233334444, $validity, 100);
-
-
+        $paid = $gateway->pay($name, $credit_card_number, $validity, $value);
         $this->assertEquals(true, $paid);
     }
 }
